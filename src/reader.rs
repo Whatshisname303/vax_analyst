@@ -1,6 +1,8 @@
 use std::error::Error;
+use std::io::{BufRead, BufReader};
 use std::fs;
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 pub struct GeneralData {
     pub scenario_plays: u32,
@@ -13,14 +15,14 @@ pub struct ScenarioData {
 
 pub struct ScenarioRun {
     pub score: f32,
-    pub timestamp: u32,
+    pub timestamp: u64,
 }
 
 pub fn get_general_data() -> Result<GeneralData, Box<dyn Error>> {
     let mut plays = 0;
     let mut scenarios: HashMap<String, ScenarioData> = HashMap::new();
 
-    for file in fs::read_dir("stats")? {
+    for file in fs::read_dir("garbage/my_stats")? {
         let file = file?;
         let path = file.path();
         let name = match path.file_name() {
@@ -56,22 +58,26 @@ fn get_scenario_name(path: &str) -> Option<String> {
 }
 
 fn read_scenario_run(path: &std::path::PathBuf) -> Result<ScenarioRun, Box<dyn Error>> {
-    let data = fs::read(path)?;
-    let utf8 = String::from_utf8(data)?;
+    let file = fs::File::open(path)?;
 
-    let mut score_index = utf8.find("Score:").ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Score field not found"))?;
-    score_index += 7; // Skip "Score:,"
-    let mut end_index = score_index;
+    let timestamp = file.metadata()?.created()?.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+    let mut score: Option<f32> = None;
 
-    for byte in utf8[score_index..utf8.len()].bytes() {
-        if byte == b'\r' || byte == b'\n' {
-            break;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+
+        if line.len() > 6 && &line[..6] == "Score:" {
+            score = Some(line[7..].parse()?);
         }
-        end_index += 1;
     }
 
-    Ok(ScenarioRun {
-        score: utf8[score_index..end_index].parse()?,
-        timestamp: 8,
-    })
+    match score {
+        Some(score) => Ok(ScenarioRun {
+            score,
+            timestamp
+        }),
+        None => Err("Could not read score from csv".into()),
+    }
 }

@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.28.1"
+egui_extras = { version = "0.28.1", features = ["all_loaders"] }
 plotters = "0.3.6"

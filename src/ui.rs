@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{App, SelectedScreen, stat_manager};
+use crate::{stat_manager, App, ScenarioState, GraphType, SelectedScreen};
 
 impl App {
     pub fn central_panel(&mut self, ui: &mut egui::Ui) {
@@ -26,12 +26,22 @@ impl App {
                         ui.label(format!("Scenario plays: {}", general_data.scenario_plays));
                         ui.label(format!("Unique scenarios: {}", general_data.scenarios.len()));
                     },
-                    SelectedScreen::ScenarioData(scenario) => {
-                        ui.heading(&scenario);
-
-                        let scenario = general_data.scenarios.get(&scenario).unwrap();
-
-                        ui.label(format!("Plays: {}", scenario.plays.len()));
+                    SelectedScreen::ScenarioData(mut scenario_state) => {
+                        let scenario_data = general_data.scenarios.get(&scenario_state.name).unwrap();
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                ui.label("Graphs:");
+                                if ui.button("Score/Time").clicked() {
+                                    scenario_state.current_graph = GraphType::ScoreTime;
+                                    stat_manager::generate_plot(&scenario_state, scenario_data);
+                                }
+                            });
+                            ui.vertical(|ui| {
+                                ui.heading(&scenario_state.name);
+                                ui.label(format!("Plays: {}", scenario_data.plays.len()));
+                            });
+                        });
+                        ui.add_sized(egui::Vec2::new(550.0, 500.0), egui::Image::new(egui::include_image!("../plots/first.png")));
                     },
                     SelectedScreen::Loading => {
                         // might delete this
@@ -61,7 +71,10 @@ impl App {
                 self.search_results.iter().for_each(|scen| {
                     if ui.button(scen).clicked() {
                         println!("{}", scen);
-                        self.screen = SelectedScreen::ScenarioData(scen.clone());
+                        self.screen = SelectedScreen::ScenarioData(ScenarioState {
+                            name: scen.clone(),
+                            current_graph: GraphType::None,
+                        });
                     }
                 });
             }
