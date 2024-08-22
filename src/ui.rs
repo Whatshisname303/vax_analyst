@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{stat_manager, App, ScenarioState, GraphType, SelectedScreen};
+use crate::{stat_manager, App, ScenarioState, GraphType, SelectedScreen, SearchSort};
 
 impl App {
     pub fn central_panel(&mut self, ui: &mut egui::Ui) {
@@ -8,7 +8,7 @@ impl App {
             None => {
                 ui.label("Loading data");
             },
-            Some(general_data) => {
+            Some(_general_data) => {
                 ui.horizontal(|ui| {
                     if ui.button("General").clicked() {
                         self.screen = SelectedScreen::GeneralData;
@@ -84,9 +84,18 @@ impl App {
                 if ui.text_edit_singleline(&mut self.search_buffer).changed() {
                     self.search_results = match self.search_buffer.is_empty() {
                         true => Vec::new(),
-                        false => stat_manager::get_scen_search_results(&general_data, &self.search_buffer),
+                        false => stat_manager::get_scen_search_results(&general_data, &self.search_buffer, &self.search_sort),
                     };
                 }
+                ui.horizontal(|ui| {
+                    ui.label("Sort:");
+                    if ui.selectable_label(self.search_sort == SearchSort::None, "None").clicked() {
+                        self.search_sort = SearchSort::None;
+                    }
+                    if ui.selectable_label(self.search_sort == SearchSort::Plays, "Plays").clicked() {
+                        self.search_sort = SearchSort::Plays;
+                    }
+                });
                 self.search_results.iter().for_each(|scen| {
                     if ui.button(scen).clicked() {
                         println!("{}", scen);

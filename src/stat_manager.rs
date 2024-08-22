@@ -1,17 +1,26 @@
 use core::f32;
-use std::time::SystemTime;
 
 use plotters::prelude::*;
-use crate::{GraphType, ScenarioState};
+use crate::{ScenarioState, SearchSort};
 use crate::reader::{GeneralData, ScenarioData};
 
-pub fn get_scen_search_results(general_data: &GeneralData, query: &str) -> Vec<String> {
-    general_data.scenarios
+pub fn get_scen_search_results(general_data: &GeneralData, query: &str, sort: &SearchSort) -> Vec<String> {
+    let scens = &general_data.scenarios;
+
+    let mut scenario_names = scens
         .keys()
         .filter(|key| key.to_lowercase().contains(query.to_lowercase().as_str()))
         .map(|key| key.clone())
         .take(25)
-        .collect::<Vec<String>>()
+        .collect::<Vec<String>>();
+
+    let compare: Box<dyn Fn(&String, &String) -> std::cmp::Ordering> = match sort {
+        SearchSort::None => Box::new(|_a, _b| std::cmp::Ordering::Equal),
+        SearchSort::Plays => Box::new(|a, b| scens.get(b).unwrap().plays.len().cmp(&scens.get(a).unwrap().plays.len())),
+    };
+
+    scenario_names.sort_by(compare);
+    scenario_names
 }
 // pub fn get_scen_search_results<'a>(general_data: &'a GeneralData, query: &'a str) -> impl Iterator<Item = &'a String> {
 //     general_data.scenarios.keys().filter(move |key| key.contains(query)).take(5)

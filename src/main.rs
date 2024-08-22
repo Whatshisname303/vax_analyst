@@ -21,6 +21,12 @@ enum GraphType {
     PlaysTime,
 }
 
+#[derive(PartialEq)]
+enum SearchSort {
+    None,
+    Plays,
+}
+
 #[derive(Clone)]
 struct ScenarioState {
     name: String,
@@ -33,6 +39,7 @@ struct App {
     screen: SelectedScreen,
     search_buffer: String,
     search_results: Vec<String>,
+    search_sort: SearchSort,
 }
 
 impl App {
@@ -42,6 +49,7 @@ impl App {
             screen: SelectedScreen::Loading,
             search_buffer: String::new(),
             search_results: Vec::new(),
+            search_sort: SearchSort::None,
         }
     }
 }
