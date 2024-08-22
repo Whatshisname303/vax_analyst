@@ -1,6 +1,8 @@
 use std::error::Error;
 use eframe::egui;
 
+use reader::{GeneralData, Config};
+
 mod reader;
 mod stat_manager;
 mod ui;
@@ -35,7 +37,8 @@ struct ScenarioState {
 }
 
 struct App {
-    general_data: Option<reader::GeneralData>,
+    general_data: Option<GeneralData>,
+    config: Config,
     screen: SelectedScreen,
     search_buffer: String,
     search_results: Vec<String>,
@@ -46,6 +49,7 @@ impl App {
     fn new() -> Self {
         Self {
             general_data: None,
+            config: reader::get_config().unwrap(), // should add error handling
             screen: SelectedScreen::Loading,
             search_buffer: String::new(),
             search_results: Vec::new(),
@@ -77,6 +81,13 @@ impl App {
             self.screen = SelectedScreen::GeneralData;
         }
         Ok(())
+    }
+
+    fn update_search(&mut self) {
+        self.search_results = match self.search_buffer.is_empty() && !self.config.always_show_search_results {
+            true => Vec::new(),
+            false => stat_manager::get_scen_search_results(self),
+        };
     }
 
     fn add_err_popup(&mut self, msg: String) {

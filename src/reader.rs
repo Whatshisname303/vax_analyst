@@ -18,6 +18,21 @@ pub struct ScenarioRun {
     pub timestamp: u64,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct Config {
+    pub always_show_search_results: bool,
+    pub num_search_results: u32,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            always_show_search_results: false,
+            num_search_results: 25,
+        }
+    }
+}
+
 pub fn get_general_data() -> Result<GeneralData, Box<dyn Error>> {
     let mut plays = 0;
     let mut scenarios: HashMap<String, ScenarioData> = HashMap::new();
@@ -49,6 +64,18 @@ pub fn get_general_data() -> Result<GeneralData, Box<dyn Error>> {
         scenario_plays: plays,
         scenarios,
     })
+}
+
+pub fn get_config() -> Result<Config, Box<dyn Error>> {
+    let data = fs::read("config.json")?;
+    let config: Config = serde_json::from_slice(data.as_slice())?;
+    Ok(config)
+}
+
+pub fn save_config(config: &Config) -> Result<(), Box<dyn Error>> {
+    let json = serde_json::to_string_pretty(config)?;
+    fs::write("config.json", json)?;
+    Ok(())
 }
 
 fn get_scenario_name(path: &str) -> Option<String> {

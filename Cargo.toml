@@ -8,3 +8,5 @@ chrono = "0.4.38"
 eframe = "0.28.1"
 egui_extras = { version = "0.28.1", features = ["all_loaders"] }
 plotters = "0.3.6"
+serde = "1.0.208"
+serde_json = "1.0.125"

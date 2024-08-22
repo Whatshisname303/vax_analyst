@@ -2,16 +2,17 @@ use core::f32;
 
 use plotters::prelude::*;
 use crate::{ScenarioState, SearchSort};
-use crate::reader::{GeneralData, ScenarioData};
+use crate::reader::ScenarioData;
 
-pub fn get_scen_search_results(general_data: &GeneralData, query: &str, sort: &SearchSort) -> Vec<String> {
-    let scens = &general_data.scenarios;
+pub fn get_scen_search_results(app: &crate::App) -> Vec<String> {
+    let scens = &app.general_data.as_ref().unwrap().scenarios;
+    let query = &app.search_buffer;
+    let sort = &app.search_sort;
 
     let mut scenario_names = scens
         .keys()
         .filter(|key| key.to_lowercase().contains(query.to_lowercase().as_str()))
         .map(|key| key.clone())
-        .take(25)
         .collect::<Vec<String>>();
 
     let compare: Box<dyn Fn(&String, &String) -> std::cmp::Ordering> = match sort {
@@ -20,11 +21,9 @@ pub fn get_scen_search_results(general_data: &GeneralData, query: &str, sort: &S
     };
 
     scenario_names.sort_by(compare);
+    scenario_names.truncate(app.config.num_search_results as usize);
     scenario_names
 }
-// pub fn get_scen_search_results<'a>(general_data: &'a GeneralData, query: &'a str) -> impl Iterator<Item = &'a String> {
-//     general_data.scenarios.keys().filter(move |key| key.contains(query)).take(5)
-// }
 
 fn get_plot_bounds(scenario_data: &ScenarioData) -> ((u64, u64), (f32, f32)) {
     let mut score_min = f32::MAX;
