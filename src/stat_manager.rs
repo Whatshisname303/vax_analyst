@@ -1,3 +1,6 @@
+use core::f32;
+use std::time::SystemTime;
+
 use plotters::prelude::*;
 use crate::{GraphType, ScenarioState};
 use crate::reader::{GeneralData, ScenarioData};
@@ -14,30 +17,71 @@ pub fn get_scen_search_results(general_data: &GeneralData, query: &str) -> Vec<S
 //     general_data.scenarios.keys().filter(move |key| key.contains(query)).take(5)
 // }
 
-pub fn generate_plot(scenario_state: &ScenarioState, data: &ScenarioData) {
+fn get_plot_bounds(scenario_data: &ScenarioData) -> ((u64, u64), (f32, f32)) {
+    let mut score_min = f32::MAX;
+    let mut score_max = 0f32;
+    let mut time_min = u64::MAX;
+    let mut time_max = 0u64;
+
+    for run in &scenario_data.plays {
+        if run.score < score_min {
+            score_min = run.score;
+        } else if run.score > score_max {
+            score_max = run.score;
+        }
+        if run.timestamp < time_min {
+            time_min = run.timestamp;
+        } else if run.timestamp > time_max {
+            time_max = run.timestamp
+        }
+    }
+
+    score_max += (score_max - score_min) * 0.1;
+
+    ((time_min, time_max), (score_min, score_max))
+}
+
+pub fn generate_plot(scenario_state: &ScenarioState, data: &ScenarioData) -> Result<String, Box<dyn std::error::Error>> {
     println!("Creating plot for {}", scenario_state.name);
 
-    // let root = BitMapBackend::new(&scenario_state.name, (1024, 769)).into_drawing_area();
+    let white_color = &RGBColor {0: 167, 1: 167, 2: 167};
+    let white_faded = &RGBColor {0: 99, 1: 99, 2: 99};
+    let white_mist = &RGBColor {0: 70, 1: 70, 2: 70};
+    let ((x_min, x_max), (y_min, y_max)) = get_plot_bounds(&data);
+    let plot_path = format!("plots/{}-plot.png", scenario_state.name);
 
-    // root.fill(&WHITE).unwrap();
+    let root = BitMapBackend::new(&plot_path, (640, 480)).into_drawing_area();
+    root.fill(&RGBColor {0: 54, 1: 54, 2: 54})?;
+    let root = root.margin(10, 10, 10, 10);
 
-    // let areas = root.split_by_breakpoints([944], [800]);
+    let mut chart = ChartBuilder::on(&root)
+        .caption(format!("{} - Score/Time", scenario_state.name), ("sans-serif", 40).into_font().color(white_color))
+        .x_label_area_size(20)
+        .y_label_area_size(40)
+        .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
-    // let mut x_hist_ctx = ChartBuilder::on(&areas[0])
-    //     .y_label_area_size(40)
-    //     .build_cartesian_2d((0.0..1.0).step(0.01).use_round().into_segmented(), 0..250).unwrap();
-    // let mut y_hist_ctx = ChartBuilder::on(&areas[3])
-    //     .x_label_area_size(40)
-    //     .build_cartesian_2d(0..250, (0.0..1.0).step(0.01).use_round()).unwrap();
-    // let mut scatter_ctx = ChartBuilder::on(&areas[2])
-    //     .x_label_area_size(40)
-    //     .y_label_area_size(40)
-    //     .build_cartesian_2d(0f64..1f64, 0f64..1f64).unwrap();
-    // scatter_ctx
-    //     .configure_mesh()
-    //     .disable_x_mesh()
-    //     .disable_y_mesh()
-    //     .draw().unwrap();
-    // scatter_ctx.draw_series()
+    chart
+        .configure_mesh()
+        .x_labels(5)
+        .y_labels(5)
+        .x_label_formatter(&|x| chrono::DateTime::from_timestamp(*x as i64, 0).unwrap().format("%Y-%m-%d").to_string())
+        .axis_style(ShapeStyle::from(white_color))
+        .label_style(("sans-serif", 14, white_color))
+        .bold_line_style(ShapeStyle::from(white_faded).stroke_width(1))
+        .light_line_style(ShapeStyle::from(white_mist))
+        .draw()?;
 
+    chart.draw_series(PointSeries::of_element(
+        data.plays.iter().map(|run| (run.timestamp, run.score)).collect::<Vec<(u64, f32)>>(),
+        2,
+        &RED,
+        &|cord, size, style| {
+            return EmptyElement::at(cord)
+                + Circle::new((0,0), size, style.filled());
+                // + Text::new(format!("{:?}", cord), (10, 0), ("sans-serif", 10).into_font());
+        },
+    ))?;
+
+    root.present()?;
+    Ok(plot_path.clone())
 }

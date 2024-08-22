@@ -22,7 +22,7 @@ pub fn get_general_data() -> Result<GeneralData, Box<dyn Error>> {
     let mut plays = 0;
     let mut scenarios: HashMap<String, ScenarioData> = HashMap::new();
 
-    for file in fs::read_dir("garbage/my_stats")? {
+    for file in fs::read_dir("stats")? {
         let file = file?;
         let path = file.path();
         let name = match path.file_name() {

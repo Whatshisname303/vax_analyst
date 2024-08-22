@@ -25,6 +25,7 @@ enum GraphType {
 struct ScenarioState {
     name: String,
     current_graph: GraphType,
+    plot_path: Option<String>,
 }
 
 struct App {
