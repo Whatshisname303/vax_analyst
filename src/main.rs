@@ -7,6 +7,8 @@ mod reader;
 mod stat_manager;
 mod ui;
 
+const NEW_STRING: String = String::new();
+
 #[derive(Clone)]
 enum SelectedScreen {
     Loading,
@@ -20,7 +22,6 @@ enum SelectedScreen {
 enum GraphType {
     None,
     ScoreTime,
-    PlaysTime,
 }
 
 #[derive(PartialEq)]
@@ -40,7 +41,9 @@ struct App {
     general_data: Option<GeneralData>,
     config: Config,
     screen: SelectedScreen,
+    action_response: Result<String, Box<dyn Error>>,
     search_buffer: String,
+    page_buffers: [String; 5],
     search_results: Vec<String>,
     search_sort: SearchSort,
 }
@@ -51,7 +54,9 @@ impl App {
             general_data: None,
             config: reader::get_config().unwrap(), // should add error handling
             screen: SelectedScreen::Loading,
+            action_response: Ok(String::new()),
             search_buffer: String::new(),
+            page_buffers: [NEW_STRING; 5],
             search_results: Vec::new(),
             search_sort: SearchSort::None,
         }
@@ -88,6 +93,11 @@ impl App {
             true => Vec::new(),
             false => stat_manager::get_scen_search_results(self),
         };
+    }
+
+    fn clear_buffers(&mut self) {
+        self.page_buffers.iter_mut().for_each(|buf| buf.clear());
+        self.action_response = Ok(String::new());
     }
 
     fn add_err_popup(&mut self, msg: String) {

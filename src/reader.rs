@@ -20,6 +20,7 @@ pub struct ScenarioRun {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Config {
+    pub stats_path: String,
     pub always_show_search_results: bool,
     pub num_search_results: u32,
 }
@@ -27,6 +28,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            stats_path: String::new(),
             always_show_search_results: false,
             num_search_results: 25,
         }
@@ -76,6 +78,19 @@ pub fn save_config(config: &Config) -> Result<(), Box<dyn Error>> {
     let json = serde_json::to_string_pretty(config)?;
     fs::write("config.json", json)?;
     Ok(())
+}
+
+pub fn validate_stats_path(path: &str) -> Result<String, Box<dyn Error>> {
+    let path = fs::read_dir(path)?
+        .next().ok_or("Could not find any files in path")??
+        .path();
+    let extension = path
+        .extension().ok_or("Directory contains invalid items")?
+        .to_str();
+    match extension {
+        Some("csv") => Ok("Path successfully updated".to_string()),
+        _ => Err("Directory contains non-csv files".into()),
+    }
 }
 
 fn get_scenario_name(path: &str) -> Option<String> {
