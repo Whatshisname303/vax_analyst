@@ -35,11 +35,14 @@ impl Default for Config {
     }
 }
 
-pub fn get_general_data() -> Result<GeneralData, Box<dyn Error>> {
+pub fn get_general_data(path: &str) -> Result<GeneralData, Box<dyn Error>> {
+    if path.is_empty() {
+        return Err("Path is currently blank".into());
+    }
     let mut plays = 0;
     let mut scenarios: HashMap<String, ScenarioData> = HashMap::new();
 
-    for file in fs::read_dir("stats")? {
+    for file in fs::read_dir(path)? {
         let file = file?;
         let path = file.path();
         let name = match path.file_name() {

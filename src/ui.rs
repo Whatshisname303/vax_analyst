@@ -5,10 +5,11 @@ use crate::{reader::{self, Config}, stat_manager, App, GraphType, ScenarioState,
 impl App {
     pub fn central_panel(&mut self, ui: &mut egui::Ui) {
         match &self.general_data {
-            None => {
-                ui.label("Loading data");
+            Err(e) => {
+                ui.label(format!("Could not load data: {}. Set stats path and restart", e));
+                self.draw_stats_path_config(ui);
             },
-            Some(_general_data) => {
+            Ok(_general_data) => {
                 ui.horizontal(|ui| {
                     if ui.button("General").clicked() {
                         self.screen = SelectedScreen::GeneralData;
@@ -67,20 +68,7 @@ impl App {
             },
             SelectedScreen::Config => {
                 ui.add_space(10.0);
-                ui.label("Path to stats folder");
-                ui.label("This should be under FPSAimTrainer, although you can have it copied somewhere else if you like");
-                ui.horizontal(|ui| {
-                    if ui.text_edit_singleline(&mut self.page_buffers[0]).lost_focus() {
-                        self.action_response = reader::validate_stats_path(&self.page_buffers[0]);
-                        if let Ok(_) = &self.action_response {
-                            self.config.stats_path = self.page_buffers[0].clone();
-                        }
-                    }
-                    match &self.action_response {
-                        Ok(msg) => ui.label(egui::RichText::new(msg).color(egui::Color32::LIGHT_GREEN)),
-                        Err(e) => ui.label(egui::RichText::new(e.to_string()).color(egui::Color32::LIGHT_RED)),
-                    };
-                });
+                self.draw_stats_path_config(ui);
                 if ui.checkbox(&mut self.config.always_show_search_results, "Always show search results").changed() {
                     reader::save_config(&self.config).unwrap();
                     self.update_search();
@@ -111,8 +99,8 @@ impl App {
 
     pub fn right_panel(&mut self, ui: &mut egui::Ui) {
         match &self.general_data {
-            None => (),
-            Some(_general_data) => {
+            Err(_) => (),
+            Ok(_general_data) => {
                 ui.label("Search scenario");
                 if ui.text_edit_singleline(&mut self.search_buffer).changed() {
                     self.update_search();
@@ -140,5 +128,23 @@ impl App {
                 });
             }
         }
+    }
+
+    fn draw_stats_path_config(&mut self, ui: &mut egui::Ui) {
+        ui.label("Path to stats folder");
+        ui.label("This should be under FPSAimTrainer, although you can have it copied somewhere else if you like");
+        ui.horizontal(|ui| {
+            if ui.text_edit_singleline(&mut self.page_buffers[0]).lost_focus() {
+                self.action_response = reader::validate_stats_path(&self.page_buffers[0]);
+                if let Ok(_) = &self.action_response {
+                    self.config.stats_path = self.page_buffers[0].clone();
+                    reader::save_config(&self.config).unwrap();
+                }
+            }
+            match &self.action_response {
+                Ok(msg) => ui.label(egui::RichText::new(msg).color(egui::Color32::LIGHT_GREEN)),
+                Err(e) => ui.label(egui::RichText::new(e.to_string()).color(egui::Color32::LIGHT_RED)),
+            };
+        });
     }
 }

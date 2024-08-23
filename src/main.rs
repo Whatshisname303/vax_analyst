@@ -38,7 +38,7 @@ struct ScenarioState {
 }
 
 struct App {
-    general_data: Option<GeneralData>,
+    general_data: Result<GeneralData, Box<dyn Error>>,
     config: Config,
     screen: SelectedScreen,
     action_response: Result<String, Box<dyn Error>>,
@@ -49,10 +49,10 @@ struct App {
 }
 
 impl App {
-    fn new() -> Self {
+    fn new(general_data: Result<GeneralData, Box<dyn Error>>, config: Config) -> Self {
         Self {
-            general_data: None,
-            config: reader::get_config().unwrap(), // should add error handling
+            general_data,
+            config,
             screen: SelectedScreen::Loading,
             action_response: Ok(String::new()),
             search_buffer: String::new(),
@@ -66,10 +66,6 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
-        match self.update_data() {
-            Ok(()) => (),
-            Err(e) => self.add_err_popup(format!("Could not update data: {}", e)),
-        };
         egui::CentralPanel::default().show(ctx, |ui| {
             self.central_panel(ui);
         });
@@ -80,14 +76,6 @@ impl eframe::App for App {
 }
 
 impl App {
-    fn update_data(&mut self) -> Result<(), Box<dyn Error>> {
-        if self.general_data.is_none() {
-            self.general_data = Some(reader::get_general_data()?);
-            self.screen = SelectedScreen::GeneralData;
-        }
-        Ok(())
-    }
-
     fn update_search(&mut self) {
         self.search_results = match self.search_buffer.is_empty() && !self.config.always_show_search_results {
             true => Vec::new(),
@@ -99,18 +87,16 @@ impl App {
         self.page_buffers.iter_mut().for_each(|buf| buf.clear());
         self.action_response = Ok(String::new());
     }
-
-    fn add_err_popup(&mut self, msg: String) {
-        println!("TODO error found: {}", msg);
-    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let config = reader::get_config().unwrap();
+    let general_data = reader::get_general_data(&config.stats_path);
     eframe::run_native(
         "Vax Analyst",
         eframe::NativeOptions::default(),
         Box::new(|_cc| {
-            Ok(Box::new(App::new()))
+            Ok(Box::new(App::new(general_data, config)))
         },
     )).unwrap();
     Ok(())
