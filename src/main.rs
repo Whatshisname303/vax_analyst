@@ -11,7 +11,6 @@ const NEW_STRING: String = String::new();
 
 #[derive(Clone)]
 enum SelectedScreen {
-    Loading,
     Config,
     GeneralData,
     ScenarioData(ScenarioState),
@@ -53,7 +52,7 @@ impl App {
         Self {
             general_data,
             config,
-            screen: SelectedScreen::Loading,
+            screen: SelectedScreen::GeneralData,
             action_response: Ok(String::new()),
             search_buffer: String::new(),
             page_buffers: [NEW_STRING; 5],

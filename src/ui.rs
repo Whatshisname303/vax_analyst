@@ -19,7 +19,7 @@ impl App {
                     }
                     if ui.button("Config").clicked() {
                         self.clear_buffers();
-                        self.page_buffers[0] = self.config.stats_path.clone();
+                        self.page_buffers[0].clone_from(&self.config.stats_path);
                         self.screen = SelectedScreen::Config;
                     }
                 });
@@ -82,14 +82,15 @@ impl App {
                 });
                 ui.add_space(20.0);
                 if ui.button("Reset to defaults").clicked() {
+                    let prev_path = self.config.stats_path.clone();
                     self.config = Config::default();
+                    if reader::validate_stats_path(&prev_path).is_ok() {
+                        self.config.stats_path = prev_path;
+                    }
                     reader::save_config(&self.config).unwrap();
                     self.update_search();
                 }
                 SelectedScreen::Config
-            },
-            SelectedScreen::Loading => {
-                SelectedScreen::Loading
             },
             SelectedScreen::WatchingRun(run) => {
                 SelectedScreen::WatchingRun(run)
@@ -136,8 +137,8 @@ impl App {
         ui.horizontal(|ui| {
             if ui.text_edit_singleline(&mut self.page_buffers[0]).lost_focus() {
                 self.action_response = reader::validate_stats_path(&self.page_buffers[0]);
-                if let Ok(_) = &self.action_response {
-                    self.config.stats_path = self.page_buffers[0].clone();
+                if self.action_response.is_ok() {
+                    self.config.stats_path.clone_from(&self.page_buffers[0]);
                     reader::save_config(&self.config).unwrap();
                 }
             }

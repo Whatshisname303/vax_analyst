@@ -11,8 +11,7 @@ pub fn get_scen_search_results(app: &crate::App) -> Vec<String> {
 
     let mut scenario_names = scens
         .keys()
-        .filter(|key| key.to_lowercase().contains(query.to_lowercase().as_str()))
-        .map(|key| key.clone())
+        .filter(|key| key.to_lowercase().contains(query.to_lowercase().as_str())).cloned()
         .collect::<Vec<String>>();
 
     let compare: Box<dyn Fn(&String, &String) -> std::cmp::Ordering> = match sort {
@@ -52,14 +51,14 @@ fn get_plot_bounds(scenario_data: &ScenarioData) -> ((u64, u64), (f32, f32)) {
 pub fn generate_plot(scenario_state: &ScenarioState, data: &ScenarioData) -> Result<String, Box<dyn std::error::Error>> {
     println!("Creating plot for {}", scenario_state.name);
 
-    let white_color = &RGBColor {0: 167, 1: 167, 2: 167};
-    let white_faded = &RGBColor {0: 99, 1: 99, 2: 99};
-    let white_mist = &RGBColor {0: 70, 1: 70, 2: 70};
-    let ((x_min, x_max), (y_min, y_max)) = get_plot_bounds(&data);
+    let white_color = &RGBColor(167, 167, 167);
+    let white_faded = &RGBColor(99, 99, 99);
+    let white_mist = &RGBColor(70, 70, 70);
+    let ((x_min, x_max), (y_min, y_max)) = get_plot_bounds(data);
     let plot_path = format!("plots/{}-plot.png", scenario_state.name);
 
     let root = BitMapBackend::new(&plot_path, (640, 480)).into_drawing_area();
-    root.fill(&RGBColor {0: 54, 1: 54, 2: 54})?;
+    root.fill(&RGBColor(54, 54, 54))?;
     let root = root.margin(10, 10, 10, 10);
 
     let mut chart = ChartBuilder::on(&root)
@@ -84,8 +83,8 @@ pub fn generate_plot(scenario_state: &ScenarioState, data: &ScenarioData) -> Res
         2,
         &RED,
         &|cord, size, style| {
-            return EmptyElement::at(cord)
-                + Circle::new((0,0), size, style.filled());
+            EmptyElement::at(cord)
+                + Circle::new((0,0), size, style.filled())
                 // + Text::new(format!("{:?}", cord), (10, 0), ("sans-serif", 10).into_font());
         },
     ))?;
