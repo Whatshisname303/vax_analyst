@@ -42,6 +42,8 @@ pub fn get_general_data(path: &str) -> Result<GeneralData, Box<dyn Error>> {
     let mut plays = 0;
     let mut scenarios: HashMap<String, ScenarioData> = HashMap::new();
 
+    let mut csv_line_buf = String::new();
+
     for file in fs::read_dir(path)? {
         let file = file?;
         let path = file.path();
@@ -53,11 +55,11 @@ pub fn get_general_data(path: &str) -> Result<GeneralData, Box<dyn Error>> {
 
         match scenarios.get_mut(&name) {
             Some(scen) => {
-                scen.plays.push(read_scenario_run(&path)?);
+                scen.plays.push(read_scenario_run(&path, &mut csv_line_buf)?);
             },
             None => {
                 scenarios.insert(name, ScenarioData {
-                    plays: vec![read_scenario_run(&path)?]
+                    plays: vec![read_scenario_run(&path, &mut csv_line_buf)?]
                 });
             },
         };
@@ -102,20 +104,21 @@ fn get_scenario_name(path: &str) -> Option<String> {
     Some(name)
 }
 
-fn read_scenario_run(path: &std::path::PathBuf) -> Result<ScenarioRun, Box<dyn Error>> {
+fn read_scenario_run(path: &std::path::PathBuf, line: &mut String) -> Result<ScenarioRun, Box<dyn Error>> {
     let file = fs::File::open(path)?;
 
     let timestamp = file.metadata()?.created()?.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
     let mut score: Option<f32> = None;
 
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
 
-    for line in reader.lines() {
-        let line = line.unwrap();
-
+    while reader.read_line(line)? != 0 {
         if line.len() > 6 && &line[..6] == "Score:" {
+            line.pop(); // \r
+            line.pop(); // \n
             score = Some(line[7..].parse()?);
         }
+        line.clear();
     }
 
     match score {
