@@ -1,4 +1,5 @@
 /target
-/plots
+plots/*
+!plots/.gitkeep
 /stats
 /garbage
