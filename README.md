@@ -19,3 +19,5 @@ You'll initially get a screen to give the path to your Kovaaks stats which shoul
 I copied over my stats into the project for testing which is why I'm using `./stats` but you should probably use the full path. Once you've got the `Path successfully updated` message, just restart the program and your data should start loading.
 
 You can update the path and a few other things in the config. The watch run screen might be implemented later to let you see performance stats on each run as you play them, but it has nothing right now. On the right you can search scenarios and sort by plays to get some general data, then you can generate a graph for each that creates a scatterplot of all your plays from your first to your most recent.
+
+<img width="485" alt="image" src="https://github.com/user-attachments/assets/96319994-ef80-42f1-9def-10ddaf780ab2">
